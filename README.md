@@ -27,12 +27,11 @@ DeepSeek uses **deep learning models**, specifically a **Mixture-of-Experts (MoE
 - Splits an AI model into separate sub-networks (“experts”), each specializing in a subset of input data.  
 - This reduces training resource usage dramatically while maintaining high performance.
 
-## Proposed Improvements for ML Service
-We propose **decomposing the monolithic ML service** into specialized sub-services:
-
-1. **Model Management Service:** Manages trained models, versions, and deployment (MLOps).  
-2. **Inference Service:** Handles prediction execution.  
-3. **Training Service:** Performs automatic training and orchestration (via Airflow/Kubeflow).
+## Proposed ML Service Improvements
+To complement parallelism and distribution, the ML service can be decomposed:  
+1. **Model Management Service:** Handles trained models, versions, and deployment (MLOps).  
+2. **Inference Service:** Dedicated service for executing predictions in parallel.  
+3. **Training Service:** Automated training and orchestration (Airflow/Kubeflow).  
 
 **Rationale:**  
 - A single ML service is too monolithic. Decomposition allows:
@@ -40,6 +39,10 @@ We propose **decomposing the monolithic ML service** into specialized sub-servic
   - Autonomous training pipelines  
   - Model updates without affecting inference  
   - Easier integration with MLOps tools
+**Benefits:**  
+- Independent scaling of inference and training.  
+- Continuous model updates without downtime.  
+- Easier integration with MLOps tools.
 
 ##Part2
 
@@ -77,13 +80,72 @@ The project includes **UML diagrams modeled in LaTeX**:
 13. Monitoring & Logging tracks metrics and traces  
 14. Response is sent back to the client
 
-## Getting Started
-1. Install LaTeX to compile UML diagrams  
-2. Launch microservices using Docker/Kubernetes  
-3. Configure API Gateway policies and service discovery  
-4. Test endpoints using Postman or similar tools
+# DeepSeek - Parallel Microservices Architecture
+##Part 3 
+## Team 
+- Rouaa Mahmoudi (3IDL1)  
 
-## Observability
-- Metrics: Prometheus  
-- Tracing: OpenTelemetry  
-- Logs: Centralized logging system
+## Description
+DeepSeek is a modular, scalable platform designed for AI-driven search and analysis. The system leverages **parallel microservices** and distributed components to maximize throughput and minimize latency for large-scale search requests.
+
+---
+
+## Parallel Architecture Overview
+The parallel architecture of DeepSeek is designed to handle **massive numbers of client requests simultaneously**:
+
+1. **Client Layer:** Web and Mobile clients interact through **CDN/Edge caches** to reduce latency.  
+2. **API Layer:** A **clustered API Gateway** handles routing, authentication, load balancing, rate limiting, and data transformation.  
+3. **Business Layer:**  
+   - **API Orchestrator** distributes requests to the appropriate microservices.  
+   - **User Service**, **RAG / Retrieval Service**, and **Inference Service** operate in parallel, handling requests independently.  
+4. **Model Layer:**  
+   - **Model Management & Serving Service** handles trained models and deployments.  
+   - Communication is **asynchronous via a message broker (Kafka)** for high throughput and decoupled workflows.  
+5. **Data Layer:** Sharded and replicated **databases**, **vector stores**, and **object storage** ensure fast access and parallel read/write operations.  
+6. **Monitoring:** Centralized metrics, logging, and tracing ensure observability.
+
+---
+
+## Benefits of the Parallel Architecture
+- **Optimal Resource Utilization:** Multiple inference workers process requests concurrently, maximizing throughput.  
+- **High Scalability:** The system can scale horizontally by adding more workers and service instances.  
+- **Fault Tolerance:** Failure of a single worker or service does not block the system.  
+- **Reduced Latency:** Parallel processing allows requests to be handled simultaneously without queue congestion.  
+
+---
+
+## Proof of Optimality
+The parallel architecture is conceptually optimal for high-load environments:  
+
+- Let **N** be the number of worker instances and **R** the incoming requests.  
+- Each worker can independently process a request → **throughput ≈ min(N, R)**.  
+- Excess requests are queued asynchronously without blocking active workers.  
+- Communication through **message brokers** ensures non-blocking coordination, making full use of available compute resources.  
+
+Thus, for large-scale AI search operations, this architecture minimizes response time while maintaining reliability.
+
+---
+
+## Advantages of Moving to a Distributed System
+Updating DeepSeek to a **distributed system** brings additional benefits:  
+1. **No dependence on a single OS or clock** — critical for decentralized environments.  
+2. **Horizontal scalability** to handle millions of concurrent requests.  
+3. **Resilience and fault tolerance** — nodes can fail independently without affecting overall service.  
+4. **Dynamic resource allocation** based on system load.  
+
+---
+
+
+## Request Flow Example
+1. Client sends a request (Web/Mobile).  
+2. Request goes through CDN → clustered API Gateway.  
+3. API Gateway routes requests to **BFF or API Orchestrator**.  
+4. Requests are dispatched in parallel to **User Service**, **RAG Service**, and **Inference Service**.  
+5. Inference service calls **Model Management** asynchronously through the broker.  
+6. Responses are aggregated, transformed, and returned to the client.  
+7. Metrics and logs are collected for monitoring and tracing.
+
+---
+
+
+
